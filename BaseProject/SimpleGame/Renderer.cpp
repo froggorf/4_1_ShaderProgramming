@@ -19,6 +19,7 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 
 	//Load shaders
 	m_SolidRectShader = CompileShaders("./Shaders/SolidRect.vs", "./Shaders/SolidRect.fs");
+	m_ParticleShader = CompileShaders("./Shaders/particle.vs", "./Shaders/particle.fs");
 	
 	//Create VBOs
 	CreateVertexBufferObjects();
@@ -47,10 +48,21 @@ void Renderer::CreateVertexBufferObjects()
 	glBindBuffer(GL_ARRAY_BUFFER, m_VBORect);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(rect), rect, GL_STATIC_DRAW);
 
-	float vertices[] = { 0.0f,0.0f,0.0f, 1.0f,0.0f,0.0f,1.0f,1.0f,0.0f };
+	float vertices[] = {
+		0.0f,0.0f,0.0f, 1.0f,0.0f,0.0f,1.0f,1.0f,0.0f,
+	};
 	glGenBuffers(1, &m_TESTVBO);	//ID 만들기
 	glBindBuffer(GL_ARRAY_BUFFER, m_TESTVBO);	//작업대 위에 array 올리기
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //바인딩된 VBO에 실제 데이터 넣기
+
+	float size = 0.05;
+	float particleVertices[] = {
+		-size, -size, 0,	size,-size,0,	size,size,0,
+		size,size,0,	-size,size,0,		-size,-size,0
+	};
+	glGenBuffers(1, &m_ParticleVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(particleVertices), particleVertices, GL_STATIC_DRAW);
 }
 
 void Renderer::AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType)
@@ -158,7 +170,7 @@ GLuint Renderer::CompileShaders(char* filenameVS, char* filenameFS)
 	}
 
 	glUseProgram(ShaderProgram);
-	std::cout << filenameVS << ", " << filenameFS << " Shader compiling is done.";
+	std::cout << filenameVS << ", " << filenameFS << " Shader compiling is done."<<std::endl;
 
 	return ShaderProgram;
 }
@@ -171,7 +183,7 @@ void Renderer::DrawSolidRect(float x, float y, float z, float size, float r, flo
 
 	//Program select
 	glUseProgram(m_SolidRectShader);
-
+	
 	glUniform4f(glGetUniformLocation(m_SolidRectShader, "u_Trans"), newX, newY, 0, size);
 	glUniform4f(glGetUniformLocation(m_SolidRectShader, "u_Color"), r, g, b, a);
 
@@ -209,5 +221,31 @@ void Renderer::DrawTEST()
 	
 	glDisableVertexAttribArray(attribPosition);
 	
+
+}
+
+
+
+void Renderer::DrawParticle()
+{
+	//Program select
+	GLuint shader = m_ParticleShader;
+	glUseProgram(shader);
+
+	static float time = 0;
+	time += 50;
+	if (time > 2000) time = 0;
+	glUniform1f(glGetUniformLocation(shader, "u_Time"), time);
+
+
+	int attribPosition = glGetAttribLocation(shader, "a_Position");
+	glEnableVertexAttribArray(attribPosition);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVBO);
+	glVertexAttribPointer(attribPosition, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glDisableVertexAttribArray(attribPosition);
+
 
 }
