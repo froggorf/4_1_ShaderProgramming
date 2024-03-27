@@ -20,7 +20,7 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	//Load shaders
 	m_SolidRectShader = CompileShaders("./Shaders/SolidRect.vs", "./Shaders/SolidRect.fs");
 	m_ParticleShader = CompileShaders("./Shaders/particle.vs", "./Shaders/particle.fs");
-	
+	m_CloudShader = CompileShaders("./Shaders/Cloud.vs", "./Shaders/Cloud.fs");
 	//Create VBOs
 	CreateVertexBufferObjects();
 
@@ -217,35 +217,72 @@ void Renderer::CreateParticleCloud(int numParticles)
 	float size = 0.01f;
 	int particleCount = numParticles;
 	int vertexCount = numParticles * 6;
-	int floatCount = vertexCount * 3;
+	int floatCount = vertexCount * (3+3+1+1); // x, y, z, vx, vy, vz, StartTime, LifeTime
 
 	float* vertices = NULL;
 	vertices = new float[floatCount];
 
+	// 버텍스 vx vy vz 추가
 	int index = 0;
 	for(int i=0; i<particleCount; ++i)
 	{
+		float StartTime = ((float)rand() / (float)RAND_MAX) *5;
+		float LifeTime = ((float)rand() / (float)RAND_MAX) * 5+2.0f;
 		centerX = ((float)rand() / (float)RAND_MAX) * 2.f - 1.f;
 		centerY = ((float)rand() / (float)RAND_MAX) * 2.f - 1.f;
+
+		float vx = ((float)rand() / (float)RAND_MAX)-0.5 ;
+		float vy = ((float)rand() / (float)RAND_MAX)-0.5;
+		float vz = 0;
 		vertices[index++] = centerX-size;
 		vertices[index++] = centerY-size;
 		vertices[index++] = 0.0f;
+		vertices[index++] = vx;
+		vertices[index++] = vy;
+		vertices[index++] = vz;
+		vertices[index++] = StartTime;
+		vertices[index++] = LifeTime;
 		vertices[index++] = centerX+size;
 		vertices[index++] = centerY+size;
 		vertices[index++] = 0.0f;
+		vertices[index++] = vx;
+		vertices[index++] = vy;
+		vertices[index++] = vz;
+		vertices[index++] = StartTime;
+		vertices[index++] = LifeTime;
 		vertices[index++] = centerX-size;
 		vertices[index++] = centerY+size;
-		vertices[index++] = 0.0f; // triangle1
+		vertices[index++] = 0.0f;
+		vertices[index++] = vx;
+		vertices[index++] = vy;
+		vertices[index++] = vz;
+		vertices[index++] = StartTime;
+		vertices[index++] = LifeTime;
 
 		vertices[index++] = centerX - size;
 		vertices[index++] = centerY - size;
 		vertices[index++] = 0.0f;
+		vertices[index++] = vx;
+		vertices[index++] = vy;
+		vertices[index++] = vz;
+		vertices[index++] = StartTime;
+		vertices[index++] = LifeTime;
 		vertices[index++] = centerX + size;
 		vertices[index++] = centerY - size;
 		vertices[index++] = 0.0f;
+		vertices[index++] = vx;
+		vertices[index++] = vy;
+		vertices[index++] = vz;
+		vertices[index++] = StartTime;
+		vertices[index++] = LifeTime;
 		vertices[index++] = centerX + size;
 		vertices[index++] = centerY + size;
-		vertices[index++] = 0.0f; // triangle2
+		vertices[index++] = 0.0f;
+		vertices[index++] = vx;
+		vertices[index++] = vy;
+		vertices[index++] = vz;
+		vertices[index++] = StartTime;
+		vertices[index++] = LifeTime;
 		
 	}
 
@@ -307,7 +344,7 @@ void Renderer::DrawParticle()
 void Renderer::DrawParticleCloud()
 {
 	//Program select
-	GLuint shader = m_ParticleShader;
+	GLuint shader = m_CloudShader;
 	glUseProgram(shader);
 
 	static float time = 0;
@@ -320,7 +357,34 @@ void Renderer::DrawParticleCloud()
 	int attribPosition = glGetAttribLocation(shader, "a_Position");
 	glEnableVertexAttribArray(attribPosition);
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleCloudVBO);
-	glVertexAttribPointer(attribPosition, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
+	glVertexAttribPointer(attribPosition, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, 0);
+
+	int StartTimeAttribPos = glGetAttribLocation(shader, "a_StartTime");
+	glEnableVertexAttribArray(StartTimeAttribPos);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleCloudVBO);
+	glVertexAttribPointer(
+		StartTimeAttribPos, 
+		1, GL_FLOAT, GL_FALSE, 
+		sizeof(float) * 8, 
+		(GLvoid*)(sizeof(float)*6));
+
+	int VelocityAttribPos = glGetAttribLocation(shader, "a_Velocity");
+	glEnableVertexAttribArray(VelocityAttribPos);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleCloudVBO);
+	glVertexAttribPointer(
+		VelocityAttribPos,
+		3, GL_FLOAT, GL_FALSE,
+		sizeof(float) * 8,
+		(GLvoid*)(sizeof(float) * 3));
+
+	int LifeTimeAttribPos = glGetAttribLocation(shader, "a_LifeTime");
+	glEnableVertexAttribArray(LifeTimeAttribPos);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleCloudVBO);
+	glVertexAttribPointer(
+		LifeTimeAttribPos,
+		1, GL_FLOAT, GL_FALSE,
+		sizeof(float) * 8,
+		(GLvoid*)(sizeof(float) * 7));
 
 	glDrawArrays(GL_TRIANGLES, 0, m_ParticleCloudVertexCount);
 
