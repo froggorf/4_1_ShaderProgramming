@@ -44,7 +44,7 @@ void RenderSceneTimer(int value)
 
 	glutSwapBuffers();
 
-	glutTimerFunc(16, RenderSceneTimer, 1);
+	glutTimerFunc(12, RenderSceneTimer, 1);
 }
 
 void Idle(void)
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 	glutKeyboardFunc(KeyInput);
 	glutMouseFunc(MouseInput);
 	glutSpecialFunc(SpecialKeyInput);
-	glutTimerFunc(16, RenderSceneTimer, 1);
+	glutTimerFunc(12, RenderSceneTimer, 1);
 
 	glutMainLoop();
 
