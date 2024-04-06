@@ -231,8 +231,8 @@ void Renderer::CreateParticleCloud(int numParticles)
 		float StartTime = ((float)rand() / (float)RAND_MAX) *5;
 		float LifeTime = ((float)rand() / (float)RAND_MAX) * 5 + 2.0f;
 		
-		centerX = ((float)rand() / (float)RAND_MAX) * 2.f - 1.f;
-		centerY = ((float)rand() / (float)RAND_MAX) * 2.f - 1.f;
+		centerX = 0.0f;//((float)rand() / (float)RAND_MAX) * 2.f - 1.f;
+		centerY = 0.0f;//((float)rand() / (float)RAND_MAX) * 2.f - 1.f;
 
 		float vx = 0.0f;//(((float)rand() / (float)RAND_MAX)*2.0f - 1.0f)*velocityScale;
 		float vy = -0.1f;//(((float)rand() / (float)RAND_MAX)*2.0f - 1.0f)*velocityScale;
