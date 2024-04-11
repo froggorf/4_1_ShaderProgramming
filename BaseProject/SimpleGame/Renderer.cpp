@@ -25,7 +25,7 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	CreateVertexBufferObjects();
 
 	// Create Particle Cloud
-	CreateParticleCloud(10000);
+	CreateParticleCloud(100000);
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
@@ -217,8 +217,8 @@ void Renderer::CreateParticleCloud(int numParticles)
 	float size = 0.005f;
 	int particleCount = numParticles;
 	int vertexCount = numParticles * 6;
-	int floatCount = vertexCount * (3+3+1+1+1+1+1);
-									// x, y, z, vx, vy, vz, StartTime, LifeTime, amp, period, value
+	int floatCount = vertexCount * (3+3+1+1+1+1+1+4);
+									// x, y, z, vx, vy, vz, StartTime, LifeTime, amp, period, value, r,g,b,a
 
 	float* vertices = NULL;
 	vertices = new float[floatCount];
@@ -243,6 +243,12 @@ void Renderer::CreateParticleCloud(int numParticles)
 
 		float value = ((float)rand() / (float)RAND_MAX);
 
+		float r, g, b, a;
+		r = ((float)rand() / (float)RAND_MAX);
+		g = ((float)rand() / (float)RAND_MAX);
+		b = ((float)rand() / (float)RAND_MAX);
+		a = ((float)rand() / (float)RAND_MAX);
+
 		vertices[index++] = centerX-size;
 		vertices[index++] = centerY-size;
 		vertices[index++] = 0.0f;
@@ -254,6 +260,11 @@ void Renderer::CreateParticleCloud(int numParticles)
 		vertices[index++] = amp;
 		vertices[index++] = period;
 		vertices[index++] = value;
+		vertices[index++] = r;
+		vertices[index++] = g;
+		vertices[index++] = b;
+		vertices[index++] = a;
+
 
 		vertices[index++] = centerX+size;
 		vertices[index++] = centerY+size;
@@ -266,6 +277,10 @@ void Renderer::CreateParticleCloud(int numParticles)
 		vertices[index++] = amp;
 		vertices[index++] = period;
 		vertices[index++] = value;
+		vertices[index++] = r;
+		vertices[index++] = g;
+		vertices[index++] = b;
+		vertices[index++] = a;
 
 		vertices[index++] = centerX-size;
 		vertices[index++] = centerY+size;
@@ -278,6 +293,10 @@ void Renderer::CreateParticleCloud(int numParticles)
 		vertices[index++] = amp;
 		vertices[index++] = period;
 		vertices[index++] = value;
+		vertices[index++] = r;
+		vertices[index++] = g;
+		vertices[index++] = b;
+		vertices[index++] = a;
 
 		vertices[index++] = centerX - size;
 		vertices[index++] = centerY - size;
@@ -290,6 +309,10 @@ void Renderer::CreateParticleCloud(int numParticles)
 		vertices[index++] = amp;
 		vertices[index++] = period;
 		vertices[index++] = value;
+		vertices[index++] = r;
+		vertices[index++] = g;
+		vertices[index++] = b;
+		vertices[index++] = a;
 
 		vertices[index++] = centerX + size;
 		vertices[index++] = centerY - size;
@@ -302,6 +325,10 @@ void Renderer::CreateParticleCloud(int numParticles)
 		vertices[index++] = amp;
 		vertices[index++] = period;
 		vertices[index++] = value;
+		vertices[index++] = r;
+		vertices[index++] = g;
+		vertices[index++] = b;
+		vertices[index++] = a;
 
 		vertices[index++] = centerX + size;
 		vertices[index++] = centerY + size;
@@ -314,6 +341,10 @@ void Renderer::CreateParticleCloud(int numParticles)
 		vertices[index++] = amp;
 		vertices[index++] = period;
 		vertices[index++] = value;
+		vertices[index++] = r;
+		vertices[index++] = g;
+		vertices[index++] = b;
+		vertices[index++] = a;
 		
 	}
 
@@ -374,10 +405,13 @@ void Renderer::DrawParticle()
 
 void Renderer::DrawParticleCloud()
 {
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//Program select
 	GLuint shader = m_CloudShader;
 	glUseProgram(shader);
-	GLuint stride = sizeof(float) * 11;
+	GLuint stride = sizeof(float) * (3 + 3 + 1 + 1 + 1 + 1 + 1 + 4);
+	// x, y, z, vx, vy, vz, StartTime, LifeTime, amp, period, value, r,g,b,a;
 
 
 	static float time = 0;
@@ -450,9 +484,18 @@ void Renderer::DrawParticleCloud()
 		stride,
 		(GLvoid*)(sizeof(float) * 10));
 
+	int rgbaAttribPos = glGetAttribLocation(shader, "a_Color");
+	glEnableVertexAttribArray(rgbaAttribPos);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleCloudVBO);
+	glVertexAttribPointer(
+		rgbaAttribPos,
+		4, GL_FLOAT, GL_FALSE,
+		stride,
+		(GLvoid*)(sizeof(float) * 11));
+
 	glDrawArrays(GL_TRIANGLES, 0, m_ParticleCloudVertexCount);
 
 	glDisableVertexAttribArray(attribPosition);
 
-
+	glDisable(GL_BLEND);
 }
