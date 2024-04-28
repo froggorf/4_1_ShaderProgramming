@@ -1,6 +1,11 @@
 #include "stdafx.h"
 #include "Renderer.h"
 
+#include <cassert>
+#include <vector>
+
+#include "loadpng.h"
+
 Renderer::Renderer(int windowSizeX, int windowSizeY)
 {
 	Initialize(windowSizeX, windowSizeY);
@@ -21,11 +26,20 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	m_SolidRectShader = CompileShaders("./Shaders/SolidRect.vs", "./Shaders/SolidRect.fs");
 	m_ParticleShader = CompileShaders("./Shaders/particle.vs", "./Shaders/particle.fs");
 	m_CloudShader = CompileShaders("./Shaders/Cloud.vs", "./Shaders/Cloud.fs");
+	m_FSSandboxShader = CompileShaders("./Shaders/FragmentSandbox.vs", "./Shaders/FragmentSandbox.fs");
+	m_GridMeshShader = CompileShaders("./Shaders/GridMesh.vs", "./Shaders/GridMesh.fs");
+	m_TextureSandboxShader = CompileShaders("./Shaders/TextureSandbox.vs", "./Shaders/TextureSandbox.fs");
+
+	//  텍스쳐 로드
+	m_RGBTexture= CreatePngTexture("./rgb.png", GL_NEAREST);
+
 	//Create VBOs
 	CreateVertexBufferObjects();
+	CreateTextureMesh();
 
 	// Create Particle Cloud
-	CreateParticleCloud(100000);
+	//CreateParticleCloud(100000);
+	CreateGridMesh(32,32);
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
@@ -66,6 +80,16 @@ void Renderer::CreateVertexBufferObjects()
 	glGenBuffers(1, &m_ParticleVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(particleVertices), particleVertices, GL_STATIC_DRAW);
+
+	float sbsize = 0.5;
+	float sandboxVerts[] = {
+		-sbsize, -sbsize, 0,	sbsize,-sbsize,0,	sbsize,sbsize,0,
+		sbsize,sbsize,0,	-sbsize,sbsize,0,		-sbsize,-sbsize,0
+	};
+	glGenBuffers(1, &m_FSSandboxVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_FSSandboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(sandboxVerts), sandboxVerts, GL_STATIC_DRAW);
+	
 }
 
 void Renderer::AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType)
@@ -356,6 +380,102 @@ void Renderer::CreateParticleCloud(int numParticles)
 	delete[] vertices;
 }
 
+void Renderer::CreateGridMesh(int x, int y)
+{
+	float basePosX = -0.5f;
+	float basePosY = -0.5f;
+	float targetPosX = 0.5f;
+	float targetPosY = 0.5f;
+
+	int pointCountX = x;
+	int pointCountY = y;
+
+	float width = targetPosX - basePosX;
+	float height = targetPosY - basePosY;
+
+	float* point = new float[pointCountX * pointCountY * 2];
+	float* vertices = new float[(pointCountX - 1) * (pointCountY - 1) * 2 * 3 * 3];
+	m_GridMeshVertexCount = (pointCountX - 1) * (pointCountY - 1) * 2 * 3;
+
+	//Prepare points
+	for (int x = 0; x < pointCountX; x++)
+	{
+		for (int y = 0; y < pointCountY; y++)
+		{
+			point[(y * pointCountX + x) * 2 + 0] = basePosX + width * (x / (float)(pointCountX - 1));
+			point[(y * pointCountX + x) * 2 + 1] = basePosY + height * (y / (float)(pointCountY - 1));
+		}
+	}
+
+	//Make triangles
+	int vertIndex = 0;
+	for (int x = 0; x < pointCountX - 1; x++)
+	{
+		for (int y = 0; y < pointCountY - 1; y++)
+		{
+			//Triangle part 1
+			vertices[vertIndex] = point[(y * pointCountX + x) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[(y * pointCountX + x) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + (x + 1)) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + (x + 1)) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + x) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + x) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+
+			//Triangle part 2
+			vertices[vertIndex] = point[(y * pointCountX + x) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[(y * pointCountX + x) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+			vertices[vertIndex] = point[(y * pointCountX + (x + 1)) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[(y * pointCountX + (x + 1)) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + (x + 1)) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + (x + 1)) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+		}
+	}
+
+	glGenBuffers(1, &m_GridMeshVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_GridMeshVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (pointCountX - 1) * (pointCountY - 1) * 2 * 3 * 3, vertices, GL_STATIC_DRAW);
+
+}
+
+void Renderer::CreateTextureMesh()
+{
+	float sbsize = 0.5;
+	float texturesandboxVerts[] = {
+		-sbsize, -sbsize, 0, 0, 1,
+		sbsize,-sbsize,0, 1, 1,
+		sbsize,sbsize,0,1,0,
+		sbsize,sbsize,0,1,0,
+		-sbsize,sbsize,0,0,0,
+		-sbsize,-sbsize,0,0,1	};
+	glGenBuffers(1, &m_TextureSandboxVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_TextureSandboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(texturesandboxVerts), texturesandboxVerts, GL_STATIC_DRAW);
+}
+
 
 void Renderer::DrawTEST()
 {
@@ -498,4 +618,146 @@ void Renderer::DrawParticleCloud()
 	glDisableVertexAttribArray(attribPosition);
 
 	glDisable(GL_BLEND);
+}
+
+void Renderer::DrawFSSandbox()
+{
+	//Program select
+	GLuint shader = m_FSSandboxShader;
+	glUseProgram(shader);
+	GLuint stride = sizeof(float) * (3);
+	// x, y, z
+	
+	m_FSSandboxTime+= 0.012;
+	glUniform1f(glGetUniformLocation(shader, "u_Time"), m_FSSandboxTime);
+
+
+	int attribPosition = glGetAttribLocation(shader, "a_Position");
+	glEnableVertexAttribArray(attribPosition);
+	glBindBuffer(GL_ARRAY_BUFFER, m_FSSandboxVBO);
+	glVertexAttribPointer(
+		attribPosition,
+		3, GL_FLOAT, GL_FALSE,
+		stride,
+		0);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glDisableVertexAttribArray(attribPosition);
+
+	//glDisable(GL_BLEND);
+}
+
+void Renderer::DrawGridMesh()
+{
+	//Program select
+	GLuint shader = m_GridMeshShader;
+	glUseProgram(shader);
+	GLuint stride = sizeof(float) * (3);
+	// x, y, z
+
+	m_GridMeshTime += 0.016;
+	glUniform1f(glGetUniformLocation(shader, "u_Time"), m_GridMeshTime);
+
+
+	int attribPosition = glGetAttribLocation(shader, "a_Position");
+	glEnableVertexAttribArray(attribPosition);
+	glBindBuffer(GL_ARRAY_BUFFER, m_GridMeshVBO);
+	glVertexAttribPointer(
+		attribPosition,
+		3, GL_FLOAT, GL_FALSE,
+		stride,
+		0);
+
+	glDrawArrays(GL_TRIANGLES, 0, m_GridMeshVertexCount);
+
+	glDisableVertexAttribArray(attribPosition);
+
+	//glDisable(GL_BLEND);
+}
+
+void Renderer::DrawTextureMesh()
+{
+	//Program select
+	GLuint shader = m_TextureSandboxShader;
+	glUseProgram(shader);
+	GLuint stride = sizeof(float) * (3 +2);
+	// x, y, z
+
+	m_FSSandboxTime += 0.016;
+	glUniform1f(glGetUniformLocation(shader, "u_Time"), m_TextureSandboxShader);
+
+	int UVAttribPos = glGetAttribLocation(shader, "a_Texture");
+	glEnableVertexAttribArray(UVAttribPos);
+	glBindBuffer(GL_ARRAY_BUFFER, m_TextureSandboxVBO);
+	glVertexAttribPointer(
+		UVAttribPos,
+		2, GL_FLOAT, GL_FALSE,
+		stride, 
+		(GLvoid*)(sizeof(float) * 3));
+
+	int attribPosition = glGetAttribLocation(shader, "a_Position");
+	glEnableVertexAttribArray(attribPosition);
+	glBindBuffer(GL_ARRAY_BUFFER, m_TextureSandboxVBO);
+	glVertexAttribPointer(
+		attribPosition,
+		3, GL_FLOAT, GL_FALSE,
+		stride,
+		0);
+
+	glUniform1i(glGetUniformLocation(shader, "uTexSampler"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_RGBTexture);
+	
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glDisableVertexAttribArray(attribPosition);
+}
+
+
+GLuint Renderer::CreatePngTexture(char* filePath, GLuint samplingMethod)
+
+{
+
+	//Load Png
+
+	std::vector<unsigned char> image;
+
+	unsigned width, height;
+
+	unsigned error = lodepng::decode(image, width, height, filePath);
+
+	if (error != 0)
+
+	{
+
+		std::cout << "PNG image loading failed:" << filePath << std::endl;
+
+		assert(0);
+
+	}
+
+
+
+	GLuint temp;
+
+	glGenTextures(1, &temp);
+
+	glBindTexture(GL_TEXTURE_2D, temp);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+
+		GL_UNSIGNED_BYTE, &image[0]);
+
+
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, samplingMethod);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, samplingMethod);
+
+
+
+	return temp;
+
 }
