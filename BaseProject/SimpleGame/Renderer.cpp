@@ -38,7 +38,7 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	CreateTextureMesh();
 
 	// Create Particle Cloud
-	//CreateParticleCloud(100000);
+	CreateParticleCloud(10000);
 	CreateGridMesh(32,32);
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
@@ -669,7 +669,7 @@ void Renderer::DrawGridMesh()
 		stride,
 		0);
 
-	glDrawArrays(GL_TRIANGLES, 0, m_GridMeshVertexCount);
+	glDrawArrays(GL_LINE_STRIP, 0, m_GridMeshVertexCount);
 
 	glDisableVertexAttribArray(attribPosition);
 

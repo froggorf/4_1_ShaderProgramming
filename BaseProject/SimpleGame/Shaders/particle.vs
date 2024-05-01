@@ -19,11 +19,12 @@ const vec2 c_2DGravity = vec2(0.0, -4.9);
 // ==
 
 // == Triangle
+const vec2 c_TriPos[3] = vec2[](vec2(0.0,0.5), vec2(-0.5, -0.5),  vec2(0.5,-0.5));
 
 void Line()
 {
 	float newTime = abs(fract(u_Time/u_Period)-0.5)*2.0;
-
+	newTime = abs(fract(u_Time)-0.5)*2.0;
 	vec4 newPosition = vec4((a_Position + c_StartPos) + c_Velocity*newTime, 1);
 	gl_Position = newPosition;
 }
@@ -63,10 +64,40 @@ void Parabola()
 
 void Triangle()
 {
+	float Time = fract(u_Time/3)*3;
+	vec3 newPos = a_Position;
+	newPos.x = newPos.x 
+				+ max(0, 1- floor(Time))	*	max(0, 1 + floor(Time))	*	mix(c_TriPos[0].x, c_TriPos[1].x, fract(Time))	// 0 ~ 1 초
+				+ max(0, 2- floor(Time))	*	max(0, 0 + floor(Time))	*	mix(c_TriPos[1].x, c_TriPos[2].x, fract(Time))	// 1 ~ 2 초
+				+ max(0, 3- floor(Time))	*	max(0,-1 + floor(Time))	*	mix(c_TriPos[2].x, c_TriPos[0].x, fract(Time))	// 2 ~ 3 초
+				;
+	newPos.y = newPos.y 
+				+ max(0, 1- floor(Time))	*	max(0, 1 + floor(Time))	*	mix(c_TriPos[0].y, c_TriPos[1].y, fract(Time))	// 0 ~ 1 초
+				+ max(0, 2- floor(Time))	*	max(0, 0 + floor(Time))	*	mix(c_TriPos[1].y, c_TriPos[2].y, fract(Time))	// 1 ~ 2 초
+				+ max(0, 3- floor(Time))	*	max(0,-1 + floor(Time))	*	mix(c_TriPos[2].y, c_TriPos[0].y, fract(Time))	// 2 ~ 3 초
+				;
 
-
-
+	gl_Position = vec4(newPos ,1);
 }
+
+void Triangle2()
+{
+	// 3초로 fract
+	float Time = fract(u_Time/3)*3;
+	vec3 newPos = a_Position;
+
+	// 현재 시간에 대한 int 변수
+	int tttt = int(floor(Time));
+	// 다음 시간
+	int nexttttt = (tttt+1)%3;
+
+
+	newPos.x += mix(c_TriPos[tttt].x, c_TriPos[nexttttt].x, fract(Time));
+	newPos.y += mix(c_TriPos[tttt].y, c_TriPos[nexttttt].y, fract(Time));
+
+	gl_Position = vec4(newPos ,1);
+}
+
 
 void Basic()
 {
@@ -79,6 +110,6 @@ void main()
 	//Line();
 	//Circle();
 	//Parabola();
-	//Triangle();
-	Basic();
+	Triangle2();
+	
 }

@@ -8,6 +8,8 @@ in vec4 v_Color;
 
 const float c_PI = 3.141592;
 
+const vec2 RainDropPosition[5] = vec2[](vec2(0.1f,0.1f),vec2(0.5f,0.6f),vec2(0.2f,0.8f),vec2(0.7f,0.8f),vec2(0.8f,0.2f));
+
 void FillCircle(){
 	vec4 newColor = vec4(1,1,1,1);
 	float r = 0.5f;
@@ -42,9 +44,13 @@ void Circles()
 
 	float dist = distance(v_Color.rg,circleCenter);
 
-	float input =c_PI*circleCount*4*dist + -u_Time*10;
+	float input =c_PI*circleCount*4*dist - u_Time*10;
+	input = c_PI*dist ;
+
 	float sinValue = pow(sin(input),256);
 	FragColor = vec4(sinValue);
+
+	//FragColor = vec4(v_Color);
 }
 
 void SinGraph()
@@ -67,13 +73,30 @@ void SinGraph()
 		//FragColor = vec4(0);
 		discard;
 	}
+}
 
+void RainDrop()
+{
+	for(int i=0; i<5; ++i)
+	{
+		float dist = distance(v_Color.rg,RainDropPosition[i]);
+		float input = + c_PI * dist*20;
+		float sinValue = pow(sin(input),256);
+		FragColor +=  vec4(sinValue);
+	}
 	
 
+	//float input =c_PI*dist;
+
+	
+	
+
+	//FragColor = vec4(v_Color);
 }
 
 void main()
 {
+	//FillCircle();
 	SinGraph();
-	//Circles();
+	//RainDrop();
 }

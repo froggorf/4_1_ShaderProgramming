@@ -38,9 +38,10 @@ void RenderSceneTimer(int value)
 
 	// Renderer Test
 	//g_Renderer->DrawSolidRect(0, 0, 0, 4, 1, 0, 1, 1);
-	
 	//g_Renderer->DrawParticle();
 	//g_Renderer->DrawParticleCloud();
+	
+
 	//g_Renderer->DrawFSSandbox();
 	//g_Renderer->DrawGridMesh();
 	g_Renderer->DrawTextureMesh();
